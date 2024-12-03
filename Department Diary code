@@ -1,0 +1,211 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+// Define a structure to store diary records
+typedef struct {
+    char taskName[50];
+    char departmentName[50];
+    char duration[20];
+    char date[15];
+    char time[10];
+    char address[100];
+} DiaryEntry;
+
+// Function prototypes
+void addRecord();
+void viewRecords();
+void editRecord();
+void deleteRecord();
+
+const char *FILENAME = "department_diary.dat";
+
+int main() {
+    int choice;
+    while (1) {
+        printf("Hello! Welcome to MMCOE Department Diary\n--- Department Diary ---\n");
+        printf("1. Add Record\n");
+        printf("2. View Records\n");
+        printf("3. Edit Record\n");
+        printf("4. Delete Record\n");
+        printf("5. Exit\n");
+        printf("Enter your choice: ");
+        scanf("%d", &choice);
+        getchar(); // Consume newline character
+
+        switch (choice) {
+            case 1:
+                addRecord();
+                break;
+            case 2:
+                viewRecords();
+                break;
+            case 3:
+                editRecord();
+                break;
+            case 4:
+                deleteRecord();
+                break;
+            case 5:
+                printf("Exiting the program.\n");
+                exit(0);
+            default:
+                printf("Invalid choice. Please try again.\n");
+        }
+    }
+    return 0;
+}
+
+void addRecord() {
+    FILE *file = fopen(FILENAME, "ab");
+    if (file == NULL) {
+        perror("Error opening file");
+        return;
+    }
+
+    DiaryEntry entry;
+    printf("Enter Task Name: ");
+    fgets(entry.taskName, sizeof(entry.taskName), stdin);
+    entry.taskName[strcspn(entry.taskName, "\n")] = '\0'; // Remove newline
+
+    printf("Enter Department Name: ");
+    fgets(entry.departmentName, sizeof(entry.departmentName), stdin);
+    entry.departmentName[strcspn(entry.departmentName, "\n")] = '\0';
+
+    printf("Enter Duration: ");
+    fgets(entry.duration, sizeof(entry.duration), stdin);
+    entry.duration[strcspn(entry.duration, "\n")] = '\0';
+
+    printf("Enter Date (dd/mm/yyyy): ");
+    fgets(entry.date, sizeof(entry.date), stdin);
+    entry.date[strcspn(entry.date, "\n")] = '\0';
+
+    printf("Enter Time (hh:mm): ");
+    fgets(entry.time, sizeof(entry.time), stdin);
+    entry.time[strcspn(entry.time, "\n")] = '\0';
+
+    printf("Enter Address: ");
+    fgets(entry.address, sizeof(entry.address), stdin);
+    entry.address[strcspn(entry.address, "\n")] = '\0';
+
+    fwrite(&entry, sizeof(DiaryEntry), 1, file);
+    fclose(file);
+    printf("Record added successfully!\n");
+}
+
+void viewRecords() {
+    FILE *file = fopen(FILENAME, "rb");
+    if (file == NULL) {
+        perror("Error opening file");
+        return;
+    }
+
+    DiaryEntry entry;
+    printf("\n--- Records ---\n");
+    while (fread(&entry, sizeof(DiaryEntry), 1, file)) {
+        printf("\nTask Name: %s\n", entry.taskName);
+        printf("Department Name: %s\n", entry.departmentName);
+        printf("Duration: %s\n", entry.duration);
+        printf("Date: %s\n", entry.date);
+        printf("Time: %s\n", entry.time);
+        printf("Address: %s\n", entry.address);
+    }
+    fclose(file);
+}
+
+void editRecord() {
+    FILE *file = fopen(FILENAME, "rb+");
+    if (file == NULL) {
+        perror("Error opening file");
+        return;
+    }
+
+    char taskName[50];
+    printf("Enter the Task Name to edit: ");
+    fgets(taskName, sizeof(taskName), stdin);
+    taskName[strcspn(taskName, "\n")] = '\0';
+
+    DiaryEntry entry;
+    int found = 0;
+    while (fread(&entry, sizeof(DiaryEntry), 1, file)) {
+        if (strcmp(entry.taskName, taskName) == 0) {
+            found = 1;
+            fseek(file, -sizeof(DiaryEntry), SEEK_CUR);
+
+            printf("Enter new Task Name: ");
+            fgets(entry.taskName, sizeof(entry.taskName), stdin);
+            entry.taskName[strcspn(entry.taskName, "\n")] = '\0';
+
+            printf("Enter new Department Name: ");
+            fgets(entry.departmentName, sizeof(entry.departmentName), stdin);
+            entry.departmentName[strcspn(entry.departmentName, "\n")] = '\0';
+
+            printf("Enter new Duration: ");
+            fgets(entry.duration, sizeof(entry.duration), stdin);
+            entry.duration[strcspn(entry.duration, "\n")] = '\0';
+
+            printf("Enter new Date (dd/mm/yyyy): ");
+            fgets(entry.date, sizeof(entry.date), stdin);
+            entry.date[strcspn(entry.date, "\n")] = '\0';
+
+            printf("Enter new Time (hh:mm): ");
+            fgets(entry.time, sizeof(entry.time), stdin);
+            entry.time[strcspn(entry.time, "\n")] = '\0';
+
+            printf("Enter new Address: ");
+            fgets(entry.address, sizeof(entry.address), stdin);
+            entry.address[strcspn(entry.address, "\n")] = '\0';
+
+            fwrite(&entry, sizeof(DiaryEntry), 1, file);
+            printf("Record updated successfully!\n");
+            break;
+        }
+    }
+
+    if (!found) {
+        printf("Record not found.\n");
+    }
+    fclose(file);
+}
+
+void deleteRecord() {
+    FILE *file = fopen(FILENAME, "rb");
+    if (file == NULL) {
+        perror("Error opening file");
+        return;
+    }
+
+    FILE *tempFile = fopen("temp.dat", "wb");
+    if (tempFile == NULL) {
+        perror("Error opening temp file");
+        fclose(file);
+        return;
+    }
+
+    char taskName[50];
+    printf("Enter the Task Name to delete: ");
+    fgets(taskName, sizeof(taskName), stdin);
+    taskName[strcspn(taskName, "\n")] = '\0';
+
+    DiaryEntry entry;
+    int found = 0;
+    while (fread(&entry, sizeof(DiaryEntry), 1, file)) {
+        if (strcmp(entry.taskName, taskName) != 0) {
+            fwrite(&entry, sizeof(DiaryEntry), 1, tempFile);
+        } else {
+            found = 1;
+        }
+    }
+
+    fclose(file);
+    fclose(tempFile);
+
+    remove(FILENAME);
+    rename("temp.dat", FILENAME);
+
+    if (found) {
+        printf("Record deleted successfully!\n");
+    } else {
+        printf("Record not found.\n");
+    }
+} 
